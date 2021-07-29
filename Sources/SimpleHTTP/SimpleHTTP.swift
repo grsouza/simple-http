@@ -18,11 +18,26 @@ public enum HTTPMethod: String {
 
 public struct Response {
   public let request: URLRequest
-  public let response: URLResponse
+  public let response: HTTPURLResponse
   public let data: Data
 
-  public var httpResponse: HTTPURLResponse? {
-    response as? HTTPURLResponse
+  public var statusCode: Int {
+    response.statusCode
+  }
+
+  public func json() throws -> Any {
+    try JSONSerialization.jsonObject(with: data, options: .allowFragments)
+  }
+
+  public func decoding<T: Decodable>(
+    to type: T.Type = T.self,
+    using decoder: JSONDecoder = JSONDecoder()
+  ) throws -> T {
+    try decoder.decode(type, from: data)
+  }
+
+  public func string(encoding: String.Encoding = .utf8) -> String? {
+    String(data: data, encoding: encoding)
   }
 }
 
@@ -52,7 +67,7 @@ public final class HTTPClient {
         return completionHandler(.failure(error))
       }
 
-      guard let response = response, let data = data else {
+      guard let response = response as? HTTPURLResponse, let data = data else {
         return completionHandler(.failure(URLError(.badServerResponse)))
       }
 
@@ -74,6 +89,13 @@ public final class HTTPClient {
 
     return session.dataTaskPublisher(for: urlRequest)
       .mapError { $0 as Error }
+      .tryMap { (data, response) throws -> (data: Data, response: HTTPURLResponse) in
+        guard let response = response as? HTTPURLResponse else {
+          throw URLError(.badServerResponse)
+        }
+
+        return (data: data, response: response)
+      }
       .map { data, response in
         Response(request: urlRequest, response: response, data: data)
       }
