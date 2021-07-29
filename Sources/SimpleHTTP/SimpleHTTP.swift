@@ -16,6 +16,16 @@ public enum HTTPMethod: String {
   case patch = "PATCH"
 }
 
+public struct Response {
+  public let request: URLRequest
+  public let response: URLResponse
+  public let data: Data
+
+  public var httpResponse: HTTPURLResponse? {
+    response as? HTTPURLResponse
+  }
+}
+
 public final class HTTPClient {
 
   public let url: URL
@@ -28,7 +38,7 @@ public final class HTTPClient {
 
   public func request(
     _ endpoint: Endpoint,
-    completionHandler: @escaping (Result<(data: Data, response: URLResponse), Error>) -> Void
+    completionHandler: @escaping (Result<Response, Error>) -> Void
   ) {
     let urlRequest: URLRequest
     do {
@@ -46,14 +56,14 @@ public final class HTTPClient {
         return completionHandler(.failure(URLError(.badServerResponse)))
       }
 
-      completionHandler(.success((data, response)))
+      completionHandler(.success(Response(request: urlRequest, response: response, data: data)))
     }
     .resume()
   }
 
   @available(macOS 10.15, *)
   public func requestPublisher(_ endpoint: Endpoint) -> AnyPublisher<
-    (data: Data, response: URLResponse), Error
+    Response, Error
   > {
     let urlRequest: URLRequest
     do {
@@ -62,6 +72,11 @@ public final class HTTPClient {
       return Fail(error: error).eraseToAnyPublisher()
     }
 
-    return session.dataTaskPublisher(for: urlRequest).mapError { $0 as Error }.eraseToAnyPublisher()
+    return session.dataTaskPublisher(for: urlRequest)
+      .mapError { $0 as Error }
+      .map { data, response in
+        Response(request: urlRequest, response: response, data: data)
+      }
+      .eraseToAnyPublisher()
   }
 }
