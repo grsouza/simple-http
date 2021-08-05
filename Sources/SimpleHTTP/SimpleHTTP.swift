@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 #if canImport(Combine)
   import Combine
@@ -16,6 +17,13 @@ public enum HTTPMethod: String {
   case patch = "PATCH"
 }
 
+public enum Defaults {
+  public static var jsonDecoder = JSONDecoder()
+  public static var urlSession = URLSession.shared
+  public static var adapters: [RequestAdapter] = []
+  public static var interceptors: [ResponseInterceptor] = []
+}
+
 public struct Response {
   public let request: URLRequest
   public let response: HTTPURLResponse
@@ -31,7 +39,7 @@ public struct Response {
 
   public func decoding<T: Decodable>(
     to type: T.Type = T.self,
-    using decoder: JSONDecoder = JSONDecoder()
+    using decoder: JSONDecoder = Defaults.jsonDecoder
   ) throws -> T {
     try decoder.decode(type, from: data)
   }
@@ -41,64 +49,170 @@ public struct Response {
   }
 }
 
+public typealias RequestAdapter = (
+  _ request: URLRequest, _ completion: @escaping (Result<URLRequest, Error>) -> Void
+) -> Void
+public typealias ResponseInterceptor = (
+  _ response: Response, _ completion: @escaping (Result<Response, Error>) -> Void
+) -> Void
+
+public protocol URLSessionProtocol {
+  func dataTask(
+    with request: URLRequest, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void
+  ) -> URLSessionDataTask
+
+  @available(macOS 10.15, *)
+  func dataTaskPublisher(for request: URLRequest) -> URLSession.DataTaskPublisher
+}
+
+struct World {
+  var request: (URLRequest, @escaping (Data?, URLResponse?, Error?) -> Void) -> Void
+}
+
+#if DEBUG
+  var Current = World(request: { request, completion in
+    URLSession.shared
+      .dataTask(with: request, completionHandler: completion)
+      .resume()
+  })
+#else
+  let Current = World(request: { request, completion in
+    URLSession.shared
+      .dataTask(with: request, completionHandler: completion)
+      .resume()
+  })
+#endif
+
+extension URLSession: URLSessionProtocol {}
+
 public final class HTTPClient {
 
   public let url: URL
-  public let session: URLSession
 
-  public init(url: URL, session: URLSession = .shared) {
+  private let adapters: [RequestAdapter]
+  private let interceptors: [ResponseInterceptor]
+
+  public init(
+    url: URL,
+    adapters: [RequestAdapter] = Defaults.adapters,
+    interceptors: [ResponseInterceptor] = Defaults.interceptors
+  ) {
     self.url = url
-    self.session = session
+    self.adapters = adapters
+    self.interceptors = interceptors
   }
 
   public func request(
     _ endpoint: Endpoint,
     completionHandler: @escaping (Result<Response, Error>) -> Void
   ) {
-    let urlRequest: URLRequest
+    var urlRequest: URLRequest
     do {
-      urlRequest = try endpoint.urlRequest(with: url)
+      urlRequest = try buildURLRequest(endpoint)
     } catch {
       return completionHandler(.failure(error))
     }
 
-    session.dataTask(with: urlRequest) { data, response, error in
+    Current.request(urlRequest) { [weak self] data, response, error in
+      guard let self = self else { return }
+
       if let error = error {
         return completionHandler(.failure(error))
       }
 
-      guard let response = response as? HTTPURLResponse, let data = data else {
+      guard let httpResponse = response as? HTTPURLResponse, let data = data else {
         return completionHandler(.failure(URLError(.badServerResponse)))
       }
 
-      completionHandler(.success(Response(request: urlRequest, response: response, data: data)))
-    }
-    .resume()
-  }
+      var response = Response(request: urlRequest, response: httpResponse, data: data)
+      var error: Error?
 
-  @available(macOS 10.15, *)
-  public func requestPublisher(_ endpoint: Endpoint) -> AnyPublisher<
-    Response, Error
-  > {
-    let urlRequest: URLRequest
-    do {
-      urlRequest = try endpoint.urlRequest(with: url)
-    } catch {
-      return Fail(error: error).eraseToAnyPublisher()
-    }
+      let semaphore = DispatchSemaphore(value: 0)
 
-    return session.dataTaskPublisher(for: urlRequest)
-      .mapError { $0 as Error }
-      .tryMap { (data, response) throws -> (data: Data, response: HTTPURLResponse) in
-        guard let response = response as? HTTPURLResponse else {
-          throw URLError(.badServerResponse)
+      for interceptor in self.interceptors {
+        interceptor(response) { result in
+          switch result {
+          case .success(let newResponse):
+            response = newResponse
+          case .failure(let err):
+            error = err
+          }
+
+          semaphore.signal()
         }
 
-        return (data: data, response: response)
+        semaphore.wait()
+
+        if let error = error {
+          return completionHandler(.failure(error))
+        }
       }
-      .map { data, response in
-        Response(request: urlRequest, response: response, data: data)
+
+      completionHandler(.success(response))
+    }
+  }
+
+  //  @available(macOS 10.15, *)
+  //  public func requestPublisher(_ endpoint: Endpoint) -> AnyPublisher<
+  //    Response, Error
+  //  > {
+  //    let urlRequest: URLRequest
+  //    do {
+  //      urlRequest = try buildURLRequest(endpoint)
+  //    } catch {
+  //      return Fail(error: error).eraseToAnyPublisher()
+  //    }
+  //
+  //    return session.dataTaskPublisher(for: urlRequest)
+  //      .mapError { $0 as Error }
+  //      .tryMap { (data, response) throws -> (data: Data, response: HTTPURLResponse) in
+  //        guard let response = response as? HTTPURLResponse else {
+  //          throw URLError(.badServerResponse)
+  //        }
+  //
+  //        return (data: data, response: response)
+  //      }
+  //      .map { data, response in
+  //        Response(request: urlRequest, response: response, data: data)
+  //      }
+  //      .eraseToAnyPublisher()
+  //  }
+
+  private func buildURLRequest(_ endpoint: Endpoint) throws -> URLRequest {
+    var urlRequest = try endpoint.urlRequest(with: url)
+
+    os_log("built initial URLRequest")
+
+    var error: Error?
+    let semaphore = DispatchSemaphore(value: 0)
+
+    for adapter in adapters {
+      let id = UUID().uuidString
+      os_log("[%@] will adapt URLRequest", id)
+      adapter(urlRequest) { result in
+        switch result {
+        case .success(let newRequest):
+          urlRequest = newRequest
+          os_log("[%@] success adapting URLRequest", id)
+        case .failure(let err):
+          error = err
+          os_log("[%@] failure adapting URLRequest, error: %@", id, err.localizedDescription)
+        }
+
+        semaphore.signal()
       }
-      .eraseToAnyPublisher()
+
+      os_log("[%@] waiting for adaption to complete", id)
+      semaphore.wait()
+      os_log("[%@] adaption completed", id)
+
+      if let error = error {
+        os_log("URLRequest creation failed with error: %@", error.localizedDescription)
+        throw error
+      }
+    }
+
+    os_log("URLRequest successfully created")
+    return urlRequest
   }
 }

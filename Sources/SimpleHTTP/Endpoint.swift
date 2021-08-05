@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Endpoint {
+public struct Endpoint: Hashable {
   public let path: String
   public let method: HTTPMethod
   public let query: [URLQueryItem]?
@@ -10,7 +10,7 @@ public struct Endpoint {
   public init(
     path: String,
     method: HTTPMethod,
-    query: [URLQueryItem]?,
+    query: [URLQueryItem]? = nil,
     headers: [String: String] = [:],
     body: Data? = nil
   ) {
