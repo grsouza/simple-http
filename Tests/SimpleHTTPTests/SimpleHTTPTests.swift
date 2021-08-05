@@ -31,15 +31,26 @@ final class SimpleHTTPTests: XCTestCase {
     let body = try ["email": "johndoe@gmail.com", "password": "the.pass"].encoded()
 
     var lastAdapterExecuted = 0
+    var lastInterceptorExecuted = 0
     let client = HTTPClient(
       url: url,
-      adapters: (1..<11).map { i in
+      adapters: (1..<6).map { i in
         { request, completion in
           XCTAssertEqual(lastAdapterExecuted, i - 1)
           lastAdapterExecuted = i
 
           DispatchQueue.global().asyncAfter(deadline: .now() + Double.random(in: 0..<2)) {
             completion(.success(request))
+          }
+        }
+      },
+      interceptors: (1..<6).map { i in
+        { response, completion in
+          XCTAssertEqual(lastInterceptorExecuted, i - 1)
+          lastInterceptorExecuted = i
+
+          DispatchQueue.global().asyncAfter(deadline: .now() + Double.random(in: 0..<2)) {
+            completion(.success(response))
           }
         }
       }
@@ -67,7 +78,8 @@ final class SimpleHTTPTests: XCTestCase {
         body: body
       )
     ) { result in
-      dump(result)
+      XCTAssertEqual(lastAdapterExecuted, 5)
+      XCTAssertEqual(lastInterceptorExecuted, 5)
       expectation.fulfill()
     }
 

@@ -180,39 +180,28 @@ public final class HTTPClient {
 
   private func buildURLRequest(_ endpoint: Endpoint) throws -> URLRequest {
     var urlRequest = try endpoint.urlRequest(with: url)
-
-    os_log("built initial URLRequest")
-
     var error: Error?
     let semaphore = DispatchSemaphore(value: 0)
 
     for adapter in adapters {
-      let id = UUID().uuidString
-      os_log("[%@] will adapt URLRequest", id)
       adapter(urlRequest) { result in
         switch result {
         case .success(let newRequest):
           urlRequest = newRequest
-          os_log("[%@] success adapting URLRequest", id)
         case .failure(let err):
           error = err
-          os_log("[%@] failure adapting URLRequest, error: %@", id, err.localizedDescription)
         }
 
         semaphore.signal()
       }
 
-      os_log("[%@] waiting for adaption to complete", id)
       semaphore.wait()
-      os_log("[%@] adaption completed", id)
 
       if let error = error {
-        os_log("URLRequest creation failed with error: %@", error.localizedDescription)
         throw error
       }
     }
 
-    os_log("URLRequest successfully created")
     return urlRequest
   }
 }
