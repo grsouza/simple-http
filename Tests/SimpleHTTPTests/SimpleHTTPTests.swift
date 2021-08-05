@@ -7,7 +7,12 @@ final class SimpleHTTPTests: XCTestCase {
   let url = URL(string: "https://example.com")!
 
   func testEndpointUrlRequest() throws {
-    let body = try ["email": "johndoe@gmail.com", "password": "the.pass"].encoded()
+    let body = """
+      {
+          "email": "johndoe@gmail.com",
+          "password": "the.pass"
+      }
+      """.data(using: .utf8)!
     let endpoint = Endpoint(
       path: "/auth/signup",
       method: .post,
@@ -28,7 +33,12 @@ final class SimpleHTTPTests: XCTestCase {
   }
 
   func testRequest() throws {
-    let body = try ["email": "johndoe@gmail.com", "password": "the.pass"].encoded()
+    let body = """
+      {
+          "email": "johndoe@gmail.com",
+          "password": "the.pass"
+      }
+      """.data(using: .utf8)!
 
     var lastAdapterExecuted = 0
     var lastInterceptorExecuted = 0
@@ -84,11 +94,5 @@ final class SimpleHTTPTests: XCTestCase {
     }
 
     waitForExpectations(timeout: 20, handler: nil)
-  }
-}
-
-extension Encodable {
-  func encoded() throws -> Data {
-    try JSONEncoder().encode(self)
   }
 }

@@ -1,31 +1,33 @@
 import Foundation
 
-func defaultHeadersAdapter(_ request: URLRequest, completion: @escaping (Result<URLRequest, Error>) -> Void) {
-    let acceptEncoding: String = {
-        let encodings: [String]
+func defaultHeadersAdapter(
+  _ request: URLRequest, completion: @escaping (Result<URLRequest, Error>) -> Void
+) {
+  let acceptEncoding: String = {
+    let encodings: [String]
 
-        if #available(iOS 11.0, macOS 10.13, tvOS 11.0, watchOS 4.0, *) {
-            encodings = ["br", "gzip", "deflate"]
-        } else {
-            encodings = ["gzip", "deflate"]
-        }
+    if #available(iOS 11.0, macOS 10.13, tvOS 11.0, watchOS 4.0, *) {
+      encodings = ["br", "gzip", "deflate"]
+    } else {
+      encodings = ["gzip", "deflate"]
+    }
 
-        return encodings.qualityEncoded()
-    }()
+    return encodings.qualityEncoded()
+  }()
 
-    let acceptLanguage = Locale.preferredLanguages.prefix(6).qualityEncoded()
+  let acceptLanguage = Locale.preferredLanguages.prefix(6).qualityEncoded()
 
-    var request = request
-    request.setValue(acceptEncoding, forHTTPHeaderField: "Accept-Encoding")
-    request.setValue(acceptLanguage, forHTTPHeaderField: "Accept-Language")
-    completion(.success(request))
+  var request = request
+  request.setValue(acceptEncoding, forHTTPHeaderField: "Accept-Encoding")
+  request.setValue(acceptLanguage, forHTTPHeaderField: "Accept-Language")
+  completion(.success(request))
 }
 
 extension Collection where Element == String {
-    func qualityEncoded() -> String {
-        enumerated().map { index, encoding in
-            let quality = 1.0 - (Double(index) * 0.1)
-            return "\(encoding);q=\(quality)"
-        }.joined(separator: ", ")
-    }
+  func qualityEncoded() -> String {
+    enumerated().map { index, encoding in
+      let quality = 1.0 - (Double(index) * 0.1)
+      return "\(encoding);q=\(quality)"
+    }.joined(separator: ", ")
+  }
 }
