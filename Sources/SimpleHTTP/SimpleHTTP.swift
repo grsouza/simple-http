@@ -1,21 +1,4 @@
 import Foundation
-import os
-
-#if canImport(Combine)
-  import Combine
-#endif
-
-public enum HTTPMethod: String {
-  case get = "GET"
-  case head = "HEAD"
-  case post = "POST"
-  case put = "PUT"
-  case delete = "DELETE"
-  case connect = "CONNECT"
-  case options = "OPTIONS"
-  case trace = "TRACE"
-  case patch = "PATCH"
-}
 
 public enum Defaults {
   public static var jsonDecoder = JSONDecoder()
@@ -24,66 +7,12 @@ public enum Defaults {
   public static var interceptors: [ResponseInterceptor] = []
 }
 
-public struct Response {
-  public let request: URLRequest
-  public let response: HTTPURLResponse
-  public let data: Data
-
-  public var statusCode: Int {
-    response.statusCode
-  }
-
-  public func json() throws -> Any {
-    try JSONSerialization.jsonObject(with: data, options: .allowFragments)
-  }
-
-  public func decoding<T: Decodable>(
-    to type: T.Type = T.self,
-    using decoder: JSONDecoder = Defaults.jsonDecoder
-  ) throws -> T {
-    try decoder.decode(type, from: data)
-  }
-
-  public func string(encoding: String.Encoding = .utf8) -> String? {
-    String(data: data, encoding: encoding)
-  }
-}
-
 public typealias RequestAdapter = (
   _ request: URLRequest, _ completion: @escaping (Result<URLRequest, Error>) -> Void
 ) -> Void
 public typealias ResponseInterceptor = (
   _ response: Response, _ completion: @escaping (Result<Response, Error>) -> Void
 ) -> Void
-
-public protocol URLSessionProtocol {
-  func dataTask(
-    with request: URLRequest, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void
-  ) -> URLSessionDataTask
-
-  @available(macOS 10.15, *)
-  func dataTaskPublisher(for request: URLRequest) -> URLSession.DataTaskPublisher
-}
-
-struct World {
-  var request: (URLRequest, @escaping (Data?, URLResponse?, Error?) -> Void) -> Void
-}
-
-#if DEBUG
-  var Current = World(request: { request, completion in
-    URLSession.shared
-      .dataTask(with: request, completionHandler: completion)
-      .resume()
-  })
-#else
-  let Current = World(request: { request, completion in
-    URLSession.shared
-      .dataTask(with: request, completionHandler: completion)
-      .resume()
-  })
-#endif
-
-extension URLSession: URLSessionProtocol {}
 
 public final class HTTPClient {
 
@@ -98,7 +27,7 @@ public final class HTTPClient {
     interceptors: [ResponseInterceptor] = Defaults.interceptors
   ) {
     self.url = url
-    self.adapters = adapters
+    self.adapters = [defaultHeadersAdapter] + adapters
     self.interceptors = interceptors
   }
 
