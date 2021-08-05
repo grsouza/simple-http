@@ -42,7 +42,7 @@ public final class HTTPClient {
       return completionHandler(.failure(error))
     }
 
-    Current.request(urlRequest) { [weak self] data, response, error in
+    Current.session.request(urlRequest) { [weak self] data, response, error in
       guard let self = self else { return }
 
       if let error = error {

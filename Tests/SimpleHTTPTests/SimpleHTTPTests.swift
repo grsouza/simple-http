@@ -6,6 +6,10 @@ final class SimpleHTTPTests: XCTestCase {
 
   let url = URL(string: "https://example.com")!
 
+  override func setUp() {
+    Current = .failing
+  }
+
   func testEndpointUrlRequest() throws {
     let body = """
       {
@@ -66,7 +70,7 @@ final class SimpleHTTPTests: XCTestCase {
       }
     )
 
-    Current.request = { _, completion in
+    Current.session.request = { _, completion in
       completion(
         Data(),
         HTTPURLResponse(
