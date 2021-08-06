@@ -28,7 +28,7 @@ public final class HTTPClient {
     interceptors: [ResponseInterceptor] = Defaults.interceptors
   ) {
     self.url = url
-    self.adapters = [defaultHeadersAdapter] + adapters
+    self.adapters = [RequestAdapters.defaultHeaders] + adapters
     self.interceptors = interceptors
   }
 
