@@ -1,8 +1,8 @@
 import Foundation
 
-public enum ResponseInterceptors {
+public enum RequestInterceptors {
 
-  public static func retrier() -> ResponseInterceptor {
+  public static func retrier() -> RequestInterceptor {
     { client, result, completion in
       guard shouldRetry(result), let endpoint = result.response?.endpoint else {
         return completion(result)

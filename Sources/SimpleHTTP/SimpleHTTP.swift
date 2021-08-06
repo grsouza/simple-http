@@ -2,15 +2,15 @@ import Foundation
 
 public enum Defaults {
   public static var jsonDecoder = JSONDecoder()
-  public static var urlSession = URLSession.shared
   public static var adapters: [RequestAdapter] = []
-  public static var interceptors: [ResponseInterceptor] = []
+  public static var interceptors: [RequestInterceptor] = []
 }
 
 public typealias RequestAdapter = (
   _ request: URLRequest, _ completion: @escaping (Result<URLRequest, Error>) -> Void
 ) -> Void
-public typealias ResponseInterceptor = (
+
+public typealias RequestInterceptor = (
   _ client: HTTPClient, _ result: Result<Response, Error>,
   _ completion: @escaping (Result<Response, Error>) -> Void
 ) -> Void
@@ -20,12 +20,12 @@ public final class HTTPClient {
   public let url: URL
 
   private let adapters: [RequestAdapter]
-  private let interceptors: [ResponseInterceptor]
+  private let interceptors: [RequestInterceptor]
 
   public init(
     url: URL,
     adapters: [RequestAdapter] = Defaults.adapters,
-    interceptors: [ResponseInterceptor] = Defaults.interceptors
+    interceptors: [RequestInterceptor] = Defaults.interceptors
   ) {
     self.url = url
     self.adapters = [RequestAdapters.defaultHeaders] + adapters
@@ -60,32 +60,6 @@ public final class HTTPClient {
       self.applyInterceptors(.success(response), completion: completionHandler)
     }
   }
-
-  //  @available(macOS 10.15, *)
-  //  public func requestPublisher(_ endpoint: Endpoint) -> AnyPublisher<
-  //    Response, Error
-  //  > {
-  //    let urlRequest: URLRequest
-  //    do {
-  //      urlRequest = try buildURLRequest(endpoint)
-  //    } catch {
-  //      return Fail(error: error).eraseToAnyPublisher()
-  //    }
-  //
-  //    return session.dataTaskPublisher(for: urlRequest)
-  //      .mapError { $0 as Error }
-  //      .tryMap { (data, response) throws -> (data: Data, response: HTTPURLResponse) in
-  //        guard let response = response as? HTTPURLResponse else {
-  //          throw URLError(.badServerResponse)
-  //        }
-  //
-  //        return (data: data, response: response)
-  //      }
-  //      .map { data, response in
-  //        Response(request: urlRequest, response: response, data: data)
-  //      }
-  //      .eraseToAnyPublisher()
-  //  }
 
   private func buildURLRequest(_ endpoint: Endpoint) throws -> URLRequest {
     var urlRequest = try endpoint.urlRequest(with: url)
