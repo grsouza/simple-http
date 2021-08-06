@@ -59,12 +59,12 @@ final class SimpleHTTPTests: XCTestCase {
         }
       },
       interceptors: (1..<6).map { i in
-        { response, completion in
+        { _, response, completion in
           XCTAssertEqual(lastInterceptorExecuted, i - 1)
           lastInterceptorExecuted = i
 
           DispatchQueue.global().asyncAfter(deadline: .now() + Double.random(in: 0..<2)) {
-            completion(.success(response))
+            completion(response)
           }
         }
       }

@@ -1,6 +1,7 @@
 import Foundation
 
 public struct Response {
+  public let endpoint: Endpoint
   public let request: URLRequest
   public let response: HTTPURLResponse
   public let data: Data
@@ -29,6 +30,21 @@ public struct Response {
 }
 
 extension Result where Success == Response, Failure == Error {
+
+  public var response: Response? {
+    if case .success(let response) = self {
+      return response
+    }
+    return nil
+  }
+
+  public var error: Error? {
+    if case .failure(let error) = self {
+      return error
+    }
+    return nil
+  }
+
   public func json() -> Result<Any, Failure> {
     flatMap { response in
       Result<Any, Failure> { try response.json() }

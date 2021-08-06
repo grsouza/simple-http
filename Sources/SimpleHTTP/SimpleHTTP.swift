@@ -11,7 +11,8 @@ public typealias RequestAdapter = (
   _ request: URLRequest, _ completion: @escaping (Result<URLRequest, Error>) -> Void
 ) -> Void
 public typealias ResponseInterceptor = (
-  _ response: Response, _ completion: @escaping (Result<Response, Error>) -> Void
+  _ client: HTTPClient, _ result: Result<Response, Error>,
+  _ completion: @escaping (Result<Response, Error>) -> Void
 ) -> Void
 
 public final class HTTPClient {
@@ -46,38 +47,17 @@ public final class HTTPClient {
       guard let self = self else { return }
 
       if let error = error {
-        return completionHandler(.failure(error))
+        return self.applyInterceptors(.failure(error), completion: completionHandler)
       }
 
       guard let httpResponse = response as? HTTPURLResponse, let data = data else {
-        return completionHandler(.failure(URLError(.badServerResponse)))
+        return self.applyInterceptors(
+          .failure(URLError(.badServerResponse)), completion: completionHandler)
       }
 
-      var response = Response(request: urlRequest, response: httpResponse, data: data)
-      var error: Error?
-
-      let semaphore = DispatchSemaphore(value: 0)
-
-      for interceptor in self.interceptors {
-        interceptor(response) { result in
-          switch result {
-          case .success(let newResponse):
-            response = newResponse
-          case .failure(let err):
-            error = err
-          }
-
-          semaphore.signal()
-        }
-
-        semaphore.wait()
-
-        if let error = error {
-          return completionHandler(.failure(error))
-        }
-      }
-
-      completionHandler(.success(response))
+      let response = Response(
+        endpoint: endpoint, request: urlRequest, response: httpResponse, data: data)
+      self.applyInterceptors(.success(response), completion: completionHandler)
     }
   }
 
@@ -132,5 +112,29 @@ public final class HTTPClient {
     }
 
     return urlRequest
+  }
+
+  private func applyInterceptors(
+    _ result: Result<Response, Error>,
+    completion: @escaping (Result<Response, Error>) -> Void
+  ) {
+    let semaphore = DispatchSemaphore(value: 0)
+    var result = result
+
+    for interceptor in interceptors {
+      interceptor(self, result) { newResult in
+        result = newResult
+
+        semaphore.signal()
+      }
+
+      semaphore.wait()
+
+      if case .failure = result {
+        return completion(result)
+      }
+    }
+
+    completion(result)
   }
 }
