@@ -6,15 +6,13 @@ import PackageDescription
 let package = Package(
   name: "SimpleHTTP",
   products: [
-    // Products define the executables and libraries a package produces, and make them visible to other packages.
-    .library(
-      name: "SimpleHTTP",
-      targets: ["SimpleHTTP"]),
+    .library(name: "SimpleHTTP", targets: ["SimpleHTTP"]),
     .library(name: "SimpleHTTPLive", targets: ["SimpleHTTPLive"]),
+    .library(name: "SimpleHTTPMock", targets: ["SimpleHTTPMock"]),
   ],
   dependencies: [
     // Dependencies declare other packages that this package depends on.
-    // .package(url: /* package url */, from: "1.0.0"),
+    .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "0.2.0")
   ],
   targets: [
     // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -32,5 +30,12 @@ let package = Package(
     .testTarget(
       name: "SimpleHTTPLiveTests",
       dependencies: ["SimpleHTTPLive"]),
+
+    .target(
+      name: "SimpleHTTPMock",
+      dependencies: [
+        "SimpleHTTP",
+        .product(name: "XCTestDynamicOverlay", package: "xctest-dynamic-overlay"),
+      ]),
   ]
 )
