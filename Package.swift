@@ -9,7 +9,8 @@ let package = Package(
     // Products define the executables and libraries a package produces, and make them visible to other packages.
     .library(
       name: "SimpleHTTP",
-      targets: ["SimpleHTTP"])
+      targets: ["SimpleHTTP"]),
+    .library(name: "SimpleHTTPLive", targets: ["SimpleHTTPLive"]),
   ],
   dependencies: [
     // Dependencies declare other packages that this package depends on.
@@ -24,5 +25,12 @@ let package = Package(
     .testTarget(
       name: "SimpleHTTPTests",
       dependencies: ["SimpleHTTP"]),
+
+    .target(
+      name: "SimpleHTTPLive",
+      dependencies: ["SimpleHTTP"]),
+    .testTarget(
+      name: "SimpleHTTPLiveTests",
+      dependencies: ["SimpleHTTPLive"]),
   ]
 )

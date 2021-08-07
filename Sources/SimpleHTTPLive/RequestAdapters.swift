@@ -1,4 +1,5 @@
 import Foundation
+import SimpleHTTP
 
 public enum RequestAdapters {
   public static var defaultHeaders: RequestAdapter {

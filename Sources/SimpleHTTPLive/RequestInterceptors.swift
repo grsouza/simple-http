@@ -1,4 +1,5 @@
 import Foundation
+import SimpleHTTP
 
 public enum RequestInterceptors {
 
@@ -8,7 +9,7 @@ public enum RequestInterceptors {
         return completion(result)
       }
 
-      client.request(endpoint, completionHandler: completion)
+      client.request(endpoint, completion)
     }
   }
 

@@ -6,6 +6,13 @@ public struct Response {
   public let response: HTTPURLResponse
   public let data: Data
 
+  public init(endpoint: Endpoint, request: URLRequest, response: HTTPURLResponse, data: Data) {
+    self.endpoint = endpoint
+    self.request = request
+    self.response = response
+    self.data = data
+  }
+
   public var statusCode: Int {
     response.statusCode
   }
