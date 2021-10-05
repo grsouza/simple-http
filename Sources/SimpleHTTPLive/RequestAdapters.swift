@@ -3,7 +3,7 @@ import SimpleHTTP
 
 public enum RequestAdapters {
   public static var defaultHeaders: RequestAdapter {
-    { request, completion in
+    { request in
       let acceptEncoding: String = {
         let encodings: [String]
 
@@ -21,7 +21,7 @@ public enum RequestAdapters {
       var request = request
       request.setValue(acceptEncoding, forHTTPHeaderField: "Accept-Encoding")
       request.setValue(acceptLanguage, forHTTPHeaderField: "Accept-Language")
-      completion(.success(request))
+      return request
     }
   }
 }

@@ -3,6 +3,9 @@ import XCTest
 
 @testable import SimpleHTTPLive
 
+#if compiler(>=5.5) && canImport(_Concurrency)
+@available(iOS 15.0.0, *)
+@available(macOS 12.0.0, *)
 final class SimpleHTTPLiveTests: XCTestCase {
 
   let url = URL(string: "https://example.com")!
@@ -11,11 +14,11 @@ final class SimpleHTTPLiveTests: XCTestCase {
     Current = .failing
   }
 
-  func testRequest() throws {
+  func testRequest() async throws {
     let body = """
       {
-          "email": "johndoe@gmail.com",
-          "password": "the.pass"
+        "email": "johndoe@gmail.com",
+        "password": "the.pass"
       }
       """.data(using: .utf8)!
 
@@ -24,38 +27,38 @@ final class SimpleHTTPLiveTests: XCTestCase {
     let client = HTTPClient.live(
       url: url,
       adapters: (1..<6).map { i in
-        { request, completion in
+        { request in
           XCTAssertEqual(lastAdapterExecuted, i - 1)
           lastAdapterExecuted = i
 
-          DispatchQueue.global().asyncAfter(deadline: .now() + Double.random(in: 0..<2)) {
-            completion(.success(request))
-          }
+          await Task.sleep(UInt64.random(in: 0..<2000))
+          return request
         }
       },
       interceptors: (1..<6).map { i in
-        { _, response, completion in
+        { _, response in
           XCTAssertEqual(lastInterceptorExecuted, i - 1)
           lastInterceptorExecuted = i
 
-          DispatchQueue.global().asyncAfter(deadline: .now() + Double.random(in: 0..<2)) {
-            completion(response)
-          }
+          await Task.sleep(UInt64.random(in: 0..<2000))
+          return try response.get()
         }
       }
     )
 
-    Current.session.request = { _, completion in
-      completion(
+    Current.session.request = { _ in
+      (
         Data(),
         HTTPURLResponse(
           url: URL(string: "https://example.com/auth/signup?type=password&scope=admin")!,
-          statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+          statusCode: 200,
+          httpVersion: nil,
+          headerFields: nil
+        )!
+      )
     }
 
-    let expectation = self.expectation(description: #function)
-
-    client.request(
+    _ = try await client.request(
       Endpoint(
         path: "/auth/signup",
         method: .post,
@@ -66,12 +69,10 @@ final class SimpleHTTPLiveTests: XCTestCase {
         headers: ["Content-Type": "application/json"],
         body: body
       )
-    ) { result in
-      XCTAssertEqual(lastAdapterExecuted, 5)
-      XCTAssertEqual(lastInterceptorExecuted, 5)
-      expectation.fulfill()
-    }
-
-    waitForExpectations(timeout: 20, handler: nil)
+    )
+    
+    XCTAssertEqual(lastAdapterExecuted, 5)
+    XCTAssertEqual(lastInterceptorExecuted, 5)
   }
 }
+#endif

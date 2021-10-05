@@ -4,12 +4,12 @@ import SimpleHTTP
 public enum RequestInterceptors {
 
   public static func retrier() -> RequestInterceptor {
-    { client, result, completion in
+    { client, result in
       guard shouldRetry(result), let endpoint = result.response?.endpoint else {
-        return completion(result)
+        return try result.get()
       }
 
-      client.request(endpoint, completion)
+      return try await client.request(endpoint)
     }
   }
 
