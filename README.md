@@ -8,20 +8,13 @@ A description of this package.
 let client = HTTPClient(
   url: URL(string: "https://example.com")!,
   adapters: [myCustomAuthAdapter],
-  interceptors: [myCustomRetrier]
+  interceptors: [.retrier()]
 )
 
-client.request(
+let tasks = try await client.request(
   Endpoint(
     path: "/tasks"
     method: .get
   )
-) { result in 
-  switch result.decoded(to: [Task].self) {
-  case .success(let tasks):
-    // use the task array
-  case .failure(let error):
-    // present the error for the user?
-  }
-}
+).decoded(to: [Task].self)
 ```

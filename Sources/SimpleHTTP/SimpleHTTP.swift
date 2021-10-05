@@ -1,9 +1,9 @@
 import Foundation
 
 public enum Defaults {
-  public static var jsonDecoder = JSONDecoder()
-  public static var adapters: [RequestAdapter] = []
-  public static var interceptors: [RequestInterceptor] = []
+    public static var jsonDecoder = JSONDecoder()
+    public static var adapters: [RequestAdapter] = [RequestAdapters.defaultHeaders]
+    public static var interceptors: [RequestInterceptor] = []
 }
 
 public typealias RequestAdapter = (_ request: URLRequest) async throws -> URLRequest
@@ -12,11 +12,11 @@ public typealias RequestInterceptor = (_ client: HTTPClient, _ result: Result<Re
 
 public struct HTTPClient {
 
-  public var request: (_ endpoint: Endpoint) async throws -> Response
+    public var request: (_ endpoint: Endpoint) async throws -> Response
 
-  public init(
-    request: @escaping (_ endpoint: Endpoint) async throws -> Response
-  ) {
-    self.request = request
-  }
+    public init(
+        request: @escaping (_ endpoint: Endpoint) async throws -> Response
+    ) {
+        self.request = request
+    }
 }

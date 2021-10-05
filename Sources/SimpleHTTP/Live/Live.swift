@@ -1,5 +1,4 @@
 import Foundation
-import SimpleHTTP
 
 #if compiler(>=5.5) && canImport(_Concurrency)
 @available(iOS 15.0.0, *)

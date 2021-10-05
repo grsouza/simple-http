@@ -11,8 +11,6 @@ let package = Package(
     ],
     products: [
         .library(name: "SimpleHTTP", targets: ["SimpleHTTP"]),
-        .library(name: "SimpleHTTPLive", targets: ["SimpleHTTPLive"]),
-        .library(name: "SimpleHTTPMock", targets: ["SimpleHTTPMock"]),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -23,23 +21,9 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "SimpleHTTP",
-            dependencies: []),
-        .testTarget(
-            name: "SimpleHTTPTests",
-            dependencies: ["SimpleHTTP"]),
-        
-            .target(
-                name: "SimpleHTTPLive",
-                dependencies: ["SimpleHTTP"]),
-        .testTarget(
-            name: "SimpleHTTPLiveTests",
-            dependencies: ["SimpleHTTPLive"]),
-        
-            .target(
-                name: "SimpleHTTPMock",
-                dependencies: [
-                    "SimpleHTTP",
-                    .product(name: "XCTestDynamicOverlay", package: "xctest-dynamic-overlay"),
-                ]),
+            dependencies: [
+                .product(name: "XCTestDynamicOverlay", package: "xctest-dynamic-overlay"),
+            ]),
+        .testTarget(name: "SimpleHTTPTests", dependencies: ["SimpleHTTP"]),
     ]
 )
