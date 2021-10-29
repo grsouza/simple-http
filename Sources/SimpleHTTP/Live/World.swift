@@ -1,4 +1,5 @@
 import Foundation
+import XCTestDynamicOverlay
 
 #if compiler(>=5.5) && canImport(_Concurrency)
 
@@ -28,7 +29,9 @@ extension World {
     static var noop: Self {
         Self(
             session: Session(
-                request: { _ in fatalError() }
+                request: { _ in
+                    return (Data(), HTTPURLResponse.noop)
+                }
             )
         )
     }
@@ -39,8 +42,8 @@ extension World {
         Self(
             session: Session(
                 request: { _ in
-                    // TODO: instead of crashing, use pointfree's xctest-dynamic-overlay package.
-                    fatalError("Session.request(_:completion:) is not implemented!")
+                    XCTFail("Session.request(_:completion:) is not implemented!")
+                    return (Data(), HTTPURLResponse.failing)
                 }
             )
         )
