@@ -1,11 +1,11 @@
 import Foundation
 
 public struct Endpoint: Hashable {
-  public let path: String
-  public let method: HTTPMethod
-  public let query: [URLQueryItem]?
-  public let headers: [String: String]
-  public let body: Data?
+  public var path: String
+  public var method: HTTPMethod
+  public var query: [URLQueryItem]?
+  public var headers: [String: String]
+  public var body: Data?
 
   public init(
     path: String,
