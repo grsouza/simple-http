@@ -4,14 +4,7 @@ public enum RequestAdapters {
   public static var defaultHeaders: RequestAdapter {
     { request in
       let acceptEncoding: String = {
-        let encodings: [String]
-
-        if #available(iOS 11.0, macOS 10.13, tvOS 11.0, watchOS 4.0, *) {
-          encodings = ["br", "gzip", "deflate"]
-        } else {
-          encodings = ["gzip", "deflate"]
-        }
-
+        let encodings = ["br", "gzip", "deflate"]
         return encodings.qualityEncoded()
       }()
 

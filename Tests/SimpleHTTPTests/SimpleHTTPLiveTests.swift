@@ -30,7 +30,7 @@ import XCTest
             XCTAssertEqual(lastAdapterExecuted, i - 1)
             lastAdapterExecuted = i
 
-            await Task.sleep(UInt64.random(in: 0..<2000))
+              try await Task.sleep(nanoseconds: UInt64.random(in: 0..<2000))
             return request
           }
         },
@@ -39,7 +39,7 @@ import XCTest
             XCTAssertEqual(lastInterceptorExecuted, i - 1)
             lastInterceptorExecuted = i
 
-            await Task.sleep(UInt64.random(in: 0..<2000))
+              try await Task.sleep(nanoseconds: UInt64.random(in: 0..<2000))
             return try response.get()
           }
         }
