@@ -1,7 +1,7 @@
 import Foundation
 
 public enum RequestInterceptors {
-  static func statusCodeValidator(_ statusCodes: Range<Int>) -> RequestInterceptor {
+  public static func statusCodeValidator(_ statusCodes: Range<Int>) -> RequestInterceptor {
     { _, result in
       let response = try result.get()
       guard statusCodes.contains(response.statusCode) else {
