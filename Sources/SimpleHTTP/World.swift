@@ -40,36 +40,36 @@ extension World {
         )
     }
 
-#if DEBUG
-    /// A World implementation that does nothing when called.
-    /// Used for testing purpose only.
-    static var noop: Self {
-        Self(
-            session: Session(
-                request: { _ in
-                    return (Data(), HTTPURLResponse.noop)
-                }
+    #if DEBUG
+        /// A World implementation that does nothing when called.
+        /// Used for testing purpose only.
+        static var noop: Self {
+            Self(
+                session: Session(
+                    request: { _ in
+                        (Data(), HTTPURLResponse.noop)
+                    }
+                )
             )
-        )
-    }
+        }
 
-    /// A World implementation that always fails when called.
-    /// Used for testing purpose only.
-    static var failing: Self {
-        Self(
-            session: Session(
-                request: { _ in
-                    XCTFail("Session.request(_:completion:) is not implemented!")
-                    return (Data(), HTTPURLResponse.failing)
-                }
+        /// A World implementation that always fails when called.
+        /// Used for testing purpose only.
+        static var failing: Self {
+            Self(
+                session: Session(
+                    request: { _ in
+                        XCTFail("Session.request(_:completion:) is not implemented!")
+                        return (Data(), HTTPURLResponse.failing)
+                    }
+                )
             )
-        )
-    }
-#endif
+        }
+    #endif
 }
 
 #if DEBUG
-var Current = World.live
+    var Current = World.live
 #else
-let Current = World.live
+    let Current = World.live
 #endif
