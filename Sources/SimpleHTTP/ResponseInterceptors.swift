@@ -35,7 +35,7 @@ public struct RequestRetrier: ResponseInterceptor {
     switch result {
     case .success(let response):
       return defaultRetryableHTTPMethods.contains(response.endpoint.method)
-        || defaultRetryableHTTPStatusCode.contains(response.statusCode)
+        && defaultRetryableHTTPStatusCode.contains(response.statusCode)
     case .failure(let error as URLError):
       return defaultRetryableURLErrorCodes.contains(error.code)
     default:

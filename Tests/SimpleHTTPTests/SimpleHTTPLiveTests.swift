@@ -70,6 +70,17 @@ final class SimpleHTTPLiveTests: XCTestCase {
     XCTAssertEqual(lastAdapterExecuted, 5)
     XCTAssertEqual(lastInterceptorExecuted, 5)
   }
+
+  func testMultipleRequests() async throws {
+    Current = .live
+
+    let client = HTTPClient(baseURL: URL(string: "https://jsonplaceholder.typicode.com")!)
+    let endpoint = Endpoint(path: "/todos", method: .get)
+
+    for _ in 0..<5 {
+      _ = try await client.request(endpoint)
+    }
+  }
 }
 
 struct RequestAdapterMock: RequestAdapter {
