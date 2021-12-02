@@ -1,20 +1,21 @@
 import Foundation
 
-public enum RequestAdapters {
-  public static var defaultHeaders: RequestAdapter {
-    { _, request in
-      let acceptEncoding: String = {
-        let encodings = ["br", "gzip", "deflate"]
-        return encodings.qualityEncoded()
-      }()
+public struct DefaultHeaders: RequestAdapter {
 
-      let acceptLanguage = Locale.preferredLanguages.prefix(6).qualityEncoded()
+  public init() {}
 
-      var request = request
-      request.setValue(acceptEncoding, forHTTPHeaderField: "Accept-Encoding")
-      request.setValue(acceptLanguage, forHTTPHeaderField: "Accept-Language")
-      return request
-    }
+  public func adapt(_ client: HTTPClient, _ request: URLRequest) async throws -> URLRequest {
+    let acceptEncoding: String = {
+      let encodings = ["br", "gzip", "deflate"]
+      return encodings.qualityEncoded()
+    }()
+
+    let acceptLanguage = Locale.preferredLanguages.prefix(6).qualityEncoded()
+
+    var request = request
+    request.setValue(acceptEncoding, forHTTPHeaderField: "Accept-Encoding")
+    request.setValue(acceptLanguage, forHTTPHeaderField: "Accept-Language")
+    return request
   }
 }
 

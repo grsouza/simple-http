@@ -1,27 +1,37 @@
 import Foundation
 
-public enum RequestInterceptors {
-  public static func statusCodeValidator(_ statusCodes: Range<Int>) -> RequestInterceptor {
-    { _, result in
-      let response = try result.get()
-      guard statusCodes.contains(response.statusCode) else {
-        throw APIError(response: response)
-      }
-      return response
-    }
+public struct StatusCodeValidator: ResponseInterceptor {
+  public let statusCodes: Range<Int>
+
+  public init(statusCodes: Range<Int> = 200..<300) {
+    self.statusCodes = statusCodes
   }
 
-  public static func retrier() -> RequestInterceptor {
-    { client, result in
-      guard shouldRetry(result), let endpoint = result.value?.endpoint else {
-        return try result.get()
-      }
-
-      return try await client.request(endpoint)
+  public func intercept(_ client: HTTPClient, _ result: Result<Response, Error>) async throws
+    -> Response
+  {
+    let response = try result.get()
+    guard statusCodes.contains(response.statusCode) else {
+      throw APIError(response: response)
     }
+    return response
+  }
+}
+
+public struct RequestRetrier: ResponseInterceptor {
+  public init() {}
+
+  public func intercept(_ client: HTTPClient, _ result: Result<Response, Error>) async throws
+    -> Response
+  {
+    guard shouldRetry(result), let endpoint = result.value?.endpoint else {
+      return try result.get()
+    }
+
+    return try await client.request(endpoint)
   }
 
-  private static func shouldRetry(_ result: Result<Response, Error>) -> Bool {
+  private func shouldRetry(_ result: Result<Response, Error>) -> Bool {
     switch result {
     case .success(let response):
       return defaultRetryableHTTPMethods.contains(response.endpoint.method)

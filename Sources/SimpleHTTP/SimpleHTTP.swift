@@ -2,17 +2,20 @@ import Foundation
 
 public enum Defaults {
   public static var jsonDecoder = JSONDecoder()
-  public static var adapters: [RequestAdapter] = [RequestAdapters.defaultHeaders]
-  public static var interceptors: [RequestInterceptor] = [
-    RequestInterceptors.statusCodeValidator(200..<300),
-    RequestInterceptors.retrier(),
+  public static var adapters: [RequestAdapter] = [DefaultHeaders()]
+  public static var interceptors: [ResponseInterceptor] = [
+    StatusCodeValidator(),
+    RequestRetrier(),
   ]
 }
 
-public typealias RequestAdapter = (_ client: HTTPClient, _ request: URLRequest) async throws ->
-  URLRequest
-public typealias RequestInterceptor = (_ client: HTTPClient, _ result: Result<Response, Error>)
-  async throws -> Response
+public protocol RequestAdapter {
+  func adapt(_ client: HTTPClient, _ request: URLRequest) async throws -> URLRequest
+}
+
+public protocol ResponseInterceptor {
+  func intercept(_ client: HTTPClient, _ result: Result<Response, Error>) async throws -> Response
+}
 
 public protocol HTTPClientProtocol {
   func request(_ endpoint: Endpoint) async throws -> Response
@@ -21,12 +24,12 @@ public protocol HTTPClientProtocol {
 public final class HTTPClient: HTTPClientProtocol {
   public let baseURL: URL
   public let adapters: [RequestAdapter]
-  public let interceptors: [RequestInterceptor]
+  public let interceptors: [ResponseInterceptor]
 
   public init(
     baseURL: URL,
     adapters: [RequestAdapter] = Defaults.adapters,
-    interceptors: [RequestInterceptor] = Defaults.interceptors
+    interceptors: [ResponseInterceptor] = Defaults.interceptors
   ) {
     self.baseURL = baseURL
     self.adapters = adapters
@@ -64,21 +67,21 @@ public final class HTTPClient: HTTPClientProtocol {
     var urlRequest = try endpoint.urlRequest(with: url)
 
     for adapter in adapters {
-      urlRequest = try await adapter(self, urlRequest)
+      urlRequest = try await adapter.adapt(self, urlRequest)
     }
 
     return urlRequest
   }
 
   private func applyInterceptors(
-    _ interceptors: [RequestInterceptor],
+    _ interceptors: [ResponseInterceptor],
     result: Result<Response, Error>
   ) async throws -> Response {
     var result = result
 
     for interceptor in interceptors {
       do {
-        let response = try await interceptor(self, result)
+        let response = try await interceptor.intercept(self, result)
         result = .success(response)
       } catch {
         throw error
