@@ -36,44 +36,19 @@ public struct Response {
   }
 }
 
-extension Result where Success == Response, Failure == Error {
-  public var response: Response? {
-    if case let .success(response) = self {
-      return response
+extension Result {
+  var value: Success? {
+    if case let .success(value) = self {
+      return value
     }
     return nil
   }
 
-  public var error: Error? {
+  var error: Error? {
     if case let .failure(error) = self {
       return error
     }
     return nil
-  }
-
-  public func json() -> Result<Any, Failure> {
-    flatMap { response in
-      Result<Any, Failure> { try response.json() }
-    }
-  }
-
-  public func decoded<T: Decodable>(
-    to type: T.Type = T.self,
-    using decoder: JSONDecoder = Defaults.jsonDecoder
-  ) -> Result<T, Failure> {
-    flatMap { response in
-      Result<T, Failure> { try response.decoded(to: type, using: decoder) }
-    }
-  }
-
-  public func string(encoding: String.Encoding = .utf8) -> Result<String, Failure> {
-    flatMap { response in
-      guard let string = response.string(encoding: encoding) else {
-        return .failure(WrongStringEncoding())
-      }
-
-      return .success(string)
-    }
   }
 }
 

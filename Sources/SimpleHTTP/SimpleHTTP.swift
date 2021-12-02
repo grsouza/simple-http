@@ -9,8 +9,8 @@ public enum Defaults {
   ]
 }
 
-public typealias RequestAdapter = (_ request: URLRequest) async throws -> URLRequest
-
+public typealias RequestAdapter = (_ client: HTTPClient, _ request: URLRequest) async throws ->
+  URLRequest
 public typealias RequestInterceptor = (_ client: HTTPClient, _ result: Result<Response, Error>)
   async throws -> Response
 
@@ -24,7 +24,8 @@ public final class HTTPClient: HTTPClientProtocol {
   public let interceptors: [RequestInterceptor]
 
   public init(
-    baseURL: URL, adapters: [RequestAdapter] = Defaults.adapters,
+    baseURL: URL,
+    adapters: [RequestAdapter] = Defaults.adapters,
     interceptors: [RequestInterceptor] = Defaults.interceptors
   ) {
     self.baseURL = baseURL
@@ -46,13 +47,11 @@ public final class HTTPClient: HTTPClientProtocol {
         endpoint: endpoint, request: request, response: httpResponse, data: data)
       return try await applyInterceptors(
         interceptors,
-        client: self,
         result: .success(response)
       )
     } catch {
       return try await applyInterceptors(
         interceptors,
-        client: self,
         result: .failure(error)
       )
     }
@@ -65,7 +64,7 @@ public final class HTTPClient: HTTPClientProtocol {
     var urlRequest = try endpoint.urlRequest(with: url)
 
     for adapter in adapters {
-      urlRequest = try await adapter(urlRequest)
+      urlRequest = try await adapter(self, urlRequest)
     }
 
     return urlRequest
@@ -73,14 +72,13 @@ public final class HTTPClient: HTTPClientProtocol {
 
   private func applyInterceptors(
     _ interceptors: [RequestInterceptor],
-    client: HTTPClient,
     result: Result<Response, Error>
   ) async throws -> Response {
     var result = result
 
     for interceptor in interceptors {
       do {
-        let response = try await interceptor(client, result)
+        let response = try await interceptor(self, result)
         result = .success(response)
       } catch {
         throw error

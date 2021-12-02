@@ -2,7 +2,7 @@ import Foundation
 
 public enum RequestAdapters {
   public static var defaultHeaders: RequestAdapter {
-    { request in
+    { _, request in
       let acceptEncoding: String = {
         let encodings = ["br", "gzip", "deflate"]
         return encodings.qualityEncoded()

@@ -13,7 +13,7 @@ public enum RequestInterceptors {
 
   public static func retrier() -> RequestInterceptor {
     { client, result in
-      guard shouldRetry(result), let endpoint = result.response?.endpoint else {
+      guard shouldRetry(result), let endpoint = result.value?.endpoint else {
         return try result.get()
       }
 
@@ -22,23 +22,15 @@ public enum RequestInterceptors {
   }
 
   private static func shouldRetry(_ result: Result<Response, Error>) -> Bool {
-    guard let method = result.response?.endpoint.method,
-      defaultRetryableHTTPMethods.contains(method)
-    else {
+    switch result {
+    case .success(let response):
+      return defaultRetryableHTTPMethods.contains(response.endpoint.method)
+        || defaultRetryableHTTPStatusCode.contains(response.statusCode)
+    case .failure(let error as URLError):
+      return defaultRetryableURLErrorCodes.contains(error.code)
+    default:
       return false
     }
-
-    if let statusCode = result.response?.statusCode,
-      defaultRetryableHTTPStatusCode.contains(statusCode)
-    {
-      return true
-    }
-
-    guard let errorCode = (result.error as? URLError)?.code else {
-      return false
-    }
-
-    return defaultRetryableURLErrorCodes.contains(errorCode)
   }
 }
 

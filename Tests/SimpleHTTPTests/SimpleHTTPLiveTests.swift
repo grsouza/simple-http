@@ -26,7 +26,7 @@ import XCTest
       let client = HTTPClient(
         baseURL: url,
         adapters: (1..<6).map { i in
-          { request in
+          { _, request in
             XCTAssertEqual(lastAdapterExecuted, i - 1)
             lastAdapterExecuted = i
 
