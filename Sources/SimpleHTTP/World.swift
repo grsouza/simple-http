@@ -59,7 +59,7 @@ extension World {
       Self(
         session: Session(
           request: { _ in
-            XCTFail("Session.request(_:completion:) is not implemented!")
+            XCTFail("Session.request(_:) is not implemented!")
             return (Data(), HTTPURLResponse.failing)
           }
         )
