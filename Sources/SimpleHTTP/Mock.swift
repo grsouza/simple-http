@@ -38,15 +38,15 @@ import XCTestDynamicOverlay
     }
   }
 
-  final class HTTPClientMock: HTTPClientProtocol {
+  public final class HTTPClientMock: HTTPClientProtocol {
 
-    var requestHandler: (_ endpoint: Endpoint) async throws -> Response
+    public var requestHandler: (_ endpoint: Endpoint) async throws -> Response
 
-    init(requestHandler: @escaping (_ endpoint: Endpoint) async throws -> Response) {
+    public init(requestHandler: @escaping (_ endpoint: Endpoint) async throws -> Response) {
       self.requestHandler = requestHandler
     }
 
-    func request(_ endpoint: Endpoint) async throws -> Response {
+    public func request(_ endpoint: Endpoint) async throws -> Response {
       try await requestHandler(endpoint)
     }
   }

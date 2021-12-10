@@ -37,7 +37,7 @@ public final class HTTPClient: HTTPClientProtocol {
   }
 
   public func request(_ endpoint: Endpoint) async throws -> Response {
-    let request = try await buildURLRequest(endpoint, url: baseURL, adapters: adapters)
+      let request = try await buildURLRequest(endpoint, url: baseURL, adapters: adapters + endpoint.additionalAdapters)
 
     do {
       let (data, urlResponse) = try await Current.session.request(request)
@@ -49,12 +49,12 @@ public final class HTTPClient: HTTPClientProtocol {
       let response = Response(
         endpoint: endpoint, request: request, response: httpResponse, data: data)
       return try await applyInterceptors(
-        interceptors,
+        interceptors + endpoint.additionalInterceptors,
         result: .success(response)
       )
     } catch {
       return try await applyInterceptors(
-        interceptors,
+        interceptors + endpoint.additionalInterceptors,
         result: .failure(error)
       )
     }
