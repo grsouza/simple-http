@@ -13,27 +13,33 @@ import XCTestDynamicOverlay
 
   extension Response {
     static var noop: Response {
-      let endpoint = Endpoint(path: "", method: .get)
-      let request = try! endpoint.urlRequest(with: URL(string: "https://grds.dev")!)
-      return Response(endpoint: endpoint, request: request, response: .noop, data: Data())
+      get async {
+        let endpoint = Endpoint(path: "", method: .get)
+        let request = try! await endpoint.urlRequest(
+          with: URL(string: "https://grds.dev")!, in: HTTPClient.noop)
+        return Response(endpoint: endpoint, request: request, response: .noop, data: Data())
+      }
     }
 
     static var failing: Response {
-      let endpoint = Endpoint(path: "", method: .get)
-      let request = try! endpoint.urlRequest(with: URL(string: "https://grds.dev")!)
-      return Response(endpoint: endpoint, request: request, response: .failing, data: Data())
+      get async {
+        let endpoint = Endpoint(path: "", method: .get)
+        let request = try! await endpoint.urlRequest(
+          with: URL(string: "https://grds.dev")!, in: HTTPClient.failing)
+        return Response(endpoint: endpoint, request: request, response: .failing, data: Data())
+      }
     }
   }
 
   extension HTTPClient {
     public static var noop: HTTPClientProtocol {
-      HTTPClientMock { _ in .noop }
+      HTTPClientMock { _ in await .noop }
     }
 
     public static var failing: HTTPClientProtocol {
       HTTPClientMock { _ in
         XCTFail("HTTPClient.request(_:) is not implemented")
-        return .failing
+        return await .failing
       }
     }
   }

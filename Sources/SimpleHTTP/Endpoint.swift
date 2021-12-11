@@ -8,7 +8,6 @@ public struct Endpoint {
   public var body: Data?
 
   public var additionalAdapters: [RequestAdapter]
-  public var additionalInterceptors: [ResponseInterceptor]
 
   public init(
     path: String,
@@ -16,8 +15,7 @@ public struct Endpoint {
     query: [URLQueryItem]? = nil,
     headers: [String: String] = [:],
     body: Data? = nil,
-    additionalAdapters: [RequestAdapter] = [],
-    additionalInterceptors: [ResponseInterceptor] = []
+    additionalAdapters: [RequestAdapter] = []
   ) {
     self.path = path
     self.method = method
@@ -25,10 +23,9 @@ public struct Endpoint {
     self.headers = headers
     self.body = body
     self.additionalAdapters = additionalAdapters
-    self.additionalInterceptors = additionalInterceptors
   }
 
-  public func urlRequest(with url: URL) throws -> URLRequest {
+  public func urlRequest(with url: URL, in client: HTTPClientProtocol) async throws -> URLRequest {
     guard
       var components = URLComponents(
         url: url.appendingPathComponent(path), resolvingAgainstBaseURL: true
@@ -50,6 +47,10 @@ public struct Endpoint {
     request.httpMethod = method.rawValue
     request.allHTTPHeaderFields = headers
     request.httpBody = body
+
+    for adapter in additionalAdapters {
+      try await adapter.adapt(client, &request)
+    }
 
     return request
   }

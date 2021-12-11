@@ -7,7 +7,8 @@ public struct StatusCodeValidator: ResponseInterceptor {
     self.statusCodes = statusCodes
   }
 
-  public func intercept(_ client: HTTPClient, _ result: Result<Response, Error>) async throws
+  public func intercept(_ client: HTTPClientProtocol, _ result: Result<Response, Error>)
+    async throws
     -> Response
   {
     let response = try result.get()
@@ -21,7 +22,8 @@ public struct StatusCodeValidator: ResponseInterceptor {
 public struct RequestRetrier: ResponseInterceptor {
   public init() {}
 
-  public func intercept(_ client: HTTPClient, _ result: Result<Response, Error>) async throws
+  public func intercept(_ client: HTTPClientProtocol, _ result: Result<Response, Error>)
+    async throws
     -> Response
   {
     guard shouldRetry(result), let endpoint = result.value?.endpoint else {

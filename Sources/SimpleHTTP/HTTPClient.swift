@@ -10,11 +10,12 @@ public enum Defaults {
 }
 
 public protocol RequestAdapter {
-  func adapt(_ client: HTTPClient, _ request: URLRequest) async throws -> URLRequest
+  func adapt(_ client: HTTPClientProtocol, _ request: inout URLRequest) async throws
 }
 
 public protocol ResponseInterceptor {
-  func intercept(_ client: HTTPClient, _ result: Result<Response, Error>) async throws -> Response
+  func intercept(_ client: HTTPClientProtocol, _ result: Result<Response, Error>) async throws
+    -> Response
 }
 
 public protocol HTTPClientProtocol {
@@ -37,7 +38,7 @@ public final class HTTPClient: HTTPClientProtocol {
   }
 
   public func request(_ endpoint: Endpoint) async throws -> Response {
-      let request = try await buildURLRequest(endpoint, url: baseURL, adapters: adapters + endpoint.additionalAdapters)
+    let request = try await buildURLRequest(endpoint, url: baseURL, adapters: adapters)
 
     do {
       let (data, urlResponse) = try await Current.session.request(request)
@@ -49,12 +50,12 @@ public final class HTTPClient: HTTPClientProtocol {
       let response = Response(
         endpoint: endpoint, request: request, response: httpResponse, data: data)
       return try await applyInterceptors(
-        interceptors + endpoint.additionalInterceptors,
+        interceptors,
         result: .success(response)
       )
     } catch {
       return try await applyInterceptors(
-        interceptors + endpoint.additionalInterceptors,
+        interceptors,
         result: .failure(error)
       )
     }
@@ -64,13 +65,13 @@ public final class HTTPClient: HTTPClientProtocol {
     _ endpoint: Endpoint,
     url: URL, adapters: [RequestAdapter]
   ) async throws -> URLRequest {
-    var urlRequest = try endpoint.urlRequest(with: url)
+    var request = try await endpoint.urlRequest(with: url, in: self)
 
     for adapter in adapters {
-      urlRequest = try await adapter.adapt(self, urlRequest)
+      try await adapter.adapt(self, &request)
     }
 
-    return urlRequest
+    return request
   }
 
   private func applyInterceptors(

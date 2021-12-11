@@ -4,18 +4,15 @@ public struct DefaultHeaders: RequestAdapter {
 
   public init() {}
 
-  public func adapt(_ client: HTTPClient, _ request: URLRequest) async throws -> URLRequest {
+  public func adapt(_ client: HTTPClientProtocol, _ request: inout URLRequest) async throws {
     let acceptEncoding: String = {
       let encodings = ["br", "gzip", "deflate"]
       return encodings.qualityEncoded()
     }()
 
     let acceptLanguage = Locale.preferredLanguages.prefix(6).qualityEncoded()
-
-    var request = request
     request.setValue(acceptEncoding, forHTTPHeaderField: "Accept-Encoding")
     request.setValue(acceptLanguage, forHTTPHeaderField: "Accept-Language")
-    return request
   }
 }
 

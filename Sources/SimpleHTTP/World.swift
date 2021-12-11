@@ -1,11 +1,19 @@
 import Foundation
 import XCTestDynamicOverlay
 
-struct World {
-  var session: Session
+public struct World {
+  public var session: Session
 
-  struct Session {
-    var request: (URLRequest) async throws -> (Data, URLResponse)
+  public struct Session {
+    public var request: (URLRequest) async throws -> (Data, URLResponse)
+
+    public init(request: @escaping (URLRequest) async throws -> (Data, URLResponse)) {
+      self.request = request
+    }
+  }
+
+  public init(session: Session) {
+    self.session = session
   }
 }
 
@@ -69,7 +77,7 @@ extension World {
 }
 
 #if DEBUG
-  var Current = World.live
+  public var Current = World.live
 #else
   let Current = World.live
 #endif

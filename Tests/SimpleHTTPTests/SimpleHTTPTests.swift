@@ -5,7 +5,7 @@ import XCTest
 final class SimpleHTTPTests: XCTestCase {
   let url = URL(string: "https://example.com")!
 
-  func testEndpointUrlRequest() throws {
+  func testEndpointUrlRequest() async throws {
     let body = """
       {
           "email": "johndoe@gmail.com",
@@ -23,7 +23,7 @@ final class SimpleHTTPTests: XCTestCase {
       body: body
     )
 
-    let request = try endpoint.urlRequest(with: url)
+    let request = try await endpoint.urlRequest(with: url, in: HTTPClient.noop)
     XCTAssertEqual(
       request.url?.absoluteString, "https://example.com/auth/signup?type=password&scope=admin"
     )

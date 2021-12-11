@@ -23,12 +23,11 @@ final class SimpleHTTPLiveTests: XCTestCase {
     let client = HTTPClient(
       baseURL: url,
       adapters: (1..<6).map { i in
-        RequestAdapterMock { _, request in
+        RequestAdapterMock { _, _ in
           XCTAssertEqual(lastAdapterExecuted, i - 1)
           lastAdapterExecuted = i
 
           try await Task.sleep(nanoseconds: UInt64.random(in: 0..<2000))
-          return request
         }
       },
       interceptors: (1..<6).map { i in
@@ -84,17 +83,20 @@ final class SimpleHTTPLiveTests: XCTestCase {
 }
 
 struct RequestAdapterMock: RequestAdapter {
-  let handler: (_ client: HTTPClient, _ request: URLRequest) async throws -> URLRequest
+  let handler: (_ client: HTTPClientProtocol, _ request: inout URLRequest) async throws -> Void
 
-  func adapt(_ client: HTTPClient, _ request: URLRequest) async throws -> URLRequest {
-    try await handler(client, request)
+  func adapt(_ client: HTTPClientProtocol, _ request: inout URLRequest) async throws {
+    try await handler(client, &request)
   }
 }
 
 struct ResponseInterceptorMock: ResponseInterceptor {
-  let handler: (_ client: HTTPClient, _ result: Result<Response, Error>) async throws -> Response
+  let handler:
+    (_ client: HTTPClientProtocol, _ result: Result<Response, Error>) async throws -> Response
 
-  func intercept(_ client: HTTPClient, _ result: Result<Response, Error>) async throws -> Response {
+  func intercept(_ client: HTTPClientProtocol, _ result: Result<Response, Error>) async throws
+    -> Response
+  {
     try await handler(client, result)
   }
 }
