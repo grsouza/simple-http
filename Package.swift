@@ -14,7 +14,8 @@ let package = Package(
   ],
   dependencies: [
     // Dependencies declare other packages that this package depends on.
-    .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "0.2.0")
+    .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "0.2.0"),
+    .package(url: "https://github.com/JohnSundell/AsyncCompatibilityKit", from: "0.1.1"),
   ],
   targets: [
     // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -22,7 +23,8 @@ let package = Package(
     .target(
       name: "SimpleHTTP",
       dependencies: [
-        .product(name: "XCTestDynamicOverlay", package: "xctest-dynamic-overlay")
+        .product(name: "XCTestDynamicOverlay", package: "xctest-dynamic-overlay"),
+        "AsyncCompatibilityKit",
       ]
     ),
     .testTarget(name: "SimpleHTTPTests", dependencies: ["SimpleHTTP"]),

@@ -1,3 +1,4 @@
+import AsyncCompatibilityKit
 import Foundation
 import XCTestDynamicOverlay
 
@@ -21,29 +22,7 @@ extension World {
   static var live: World {
     World(
       session: Session(
-        request: { request in
-          if #available(iOS 15.0, macOS 12, *) {
-            return try await URLSession.shared.data(for: request)
-          } else {
-            return try await withCheckedThrowingContinuation { continuation in
-              let dataTask = URLSession.shared.dataTask(with: request) { data, response, error in
-                if let error = error {
-                  continuation.resume(throwing: error)
-                  return
-                }
-
-                guard let data = data, let response = response else {
-                  continuation.resume(throwing: URLError(.badServerResponse))
-                  return
-                }
-
-                continuation.resume(returning: (data, response))
-              }
-
-              dataTask.resume()
-            }
-          }
-        }
+        request: { try await URLSession.shared.data(for: $0) }
       )
     )
   }
